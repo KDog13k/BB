@@ -380,11 +380,29 @@ let loadedQuestions = {};   // { positionNumber: questionObject }
 async function loadFromSheets() {
     if (!SHEET_URL || SHEET_URL === 'YOUR_GOOGLE_SHEET_CSV_URL_HERE') return false;
     try {
-        currentReleaseDate = getCurrentReleaseDate();
         const res = await fetch(SHEET_URL + '&t=' + Date.now());
         if (!res.ok) return false;
         const text = await res.text();
         const rows = parseSheetCSV(text);
+
+        // Get all unique release dates available in the sheet
+        const availableDates = [...new Set(rows.map(r => r.release_date).filter(Boolean))].sort();
+        if (!availableDates.length) return false;
+
+        // Find the best release date:
+        // 1. Use current release date if questions exist for it
+        // 2. Otherwise use the most recent past date that has questions
+        // 3. If none in the past, use the next upcoming date
+        currentReleaseDate = getCurrentReleaseDate();
+        if (!availableDates.includes(currentReleaseDate)) {
+            const today = new Date().toISOString().split('T')[0];
+            const past  = availableDates.filter(d => d <= today);
+            const future = availableDates.filter(d => d > today);
+            currentReleaseDate = past.length
+                ? past[past.length - 1]   // most recent past date
+                : future[0];              // next upcoming date
+        }
+
         const releaseRows = rows.filter(r => r.release_date === currentReleaseDate);
         if (!releaseRows.length) return false;
 
@@ -392,7 +410,6 @@ async function loadFromSheets() {
             const posKey = (row.position || '').toLowerCase().trim();
             const posNum = POS_NAME_MAP[posKey];
             if (posNum === 'tiebreaker') {
-                // Store as tiebreaker question
                 const q = buildSheetQuestion(row);
                 if (!questionsDB.tiebreaker) questionsDB.tiebreaker = [];
                 questionsDB.tiebreaker.push(q);
@@ -400,6 +417,7 @@ async function loadFromSheets() {
                 loadedQuestions[posNum] = buildSheetQuestion(row);
             }
         });
+
         return Object.keys(loadedQuestions).length > 0;
     } catch(e) {
         console.log('Google Sheets load failed:', e.message);
