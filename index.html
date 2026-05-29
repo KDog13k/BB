@@ -381,7 +381,7 @@ async function loadFromSheets() {
     if (!SHEET_URL || SHEET_URL === 'YOUR_GOOGLE_SHEET_CSV_URL_HERE') return false;
     try {
         currentReleaseDate = getCurrentReleaseDate();
-        const res = await fetch(SHEET_URL);
+        const res = await fetch(SHEET_URL + '&t=' + Date.now());
         if (!res.ok) return false;
         const text = await res.text();
         const rows = parseSheetCSV(text);
