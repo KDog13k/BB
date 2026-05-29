@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Baseball Trivia Field - Enhanced</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(to bottom, #1a1a2e, #0f0f1e); min-height: 100vh; overflow-x: auto; }
+        .game-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; gap: 20px; width: 100%; }
+        .scoreboard { background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; border: 3px solid #ffd700; border-radius: 15px; padding: 25px; font-family: 'Courier New', monospace; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 50px rgba(255,215,0,0.2); width: 100%; max-width: 800px; position: relative; z-index: 10; backdrop-filter: blur(10px); animation: glow 2s ease-in-out infinite alternate; }
+        @keyframes glow { from { box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 30px rgba(255,215,0,0.2); } to { box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 50px rgba(255,215,0,0.4); } }
+        .scoreboard-header { text-align: center; color: #ffd700; font-size: 1.8rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: 3px; font-weight: bold; }
+        .score-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; font-size: 1.1rem; margin-bottom: 15px; text-align: center; }
+        .score-item { padding: 10px; border: 2px solid #ffd700; border-radius: 8px; background: rgba(0,30,60,0.6); text-shadow: 1px 1px 2px rgba(0,0,0,0.8); transition: all 0.3s ease; }
+        .score-item:hover { transform: scale(1.05); background: rgba(255,215,0,0.1); }
+        .score-item span { font-size: 1.8rem; color: #ffd700; font-weight: bold; }
+        .bonus-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .bonus-item { padding: 10px; border: 2px solid #ff6b6b; border-radius: 8px; background: rgba(255,107,107,0.1); text-align: center; color: #ff6b6b; }
+        .bases-display { margin-top: 20px; text-align: center; }
+        .bases-title { color: #ffd700; margin-bottom: 10px; font-size: 1.1rem; text-transform: uppercase; }
+        .bases-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 450px; margin: 0 auto; }
+        .base-status { padding: 10px; border: 2px solid #666; border-radius: 8px; background: rgba(50,50,50,0.6); font-size: 1rem; transition: all 0.3s ease; }
+        .base-occupied { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #000; font-weight: bold; border-color: #ffd700; animation: baseGlow 1.5s ease-in-out infinite; }
+        @keyframes baseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.5); } 50% { box-shadow: 0 0 20px rgba(255,215,0,0.8); } }
+        .field-container { position: relative; width: 100%; max-width: 900px; display: flex; justify-content: center; margin-top: 20px; }
+        .baseball-field { position: relative; width: 100%; max-width: 900px; height: 600px; border: 3px solid #333; border-radius: 15px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.5); background-image: url('https://github.com/KDog13k/BB/raw/main/Baseball%20Field.png'); background-color: #2a4d3a; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .position { position: absolute; width: 70px; height: 70px; background: linear-gradient(135deg, #ff4757, #c44569); border: 3px solid white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-size: 14px; z-index: 20; animation: popIn 0.5s ease-out; }
+        @keyframes popIn { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .position:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.7); background: linear-gradient(135deg, #ff6b7a, #ee5a70); z-index: 25; }
+        .position.completed { background: linear-gradient(135deg, #2ecc71, #27ae60); cursor: not-allowed; border: 3px solid #2ecc71; box-shadow: 0 0 0 5px rgba(46, 204, 113, 0.5); animation: none !important; }
+        .position.completed:hover { transform: none; }
+        .position.incorrect { background: linear-gradient(135deg, #e74c3c, #c0392b); border: 3px solid #e74c3c; box-shadow: 0 0 0 5px rgba(231, 76, 60, 0.5); cursor: not-allowed; animation: none !important; }
+        .position.incorrect:hover { transform: none; }
+        .pos-pitcher { bottom: 42%; left: 50%; transform: translateX(-50%) !important; }
+        .pos-catcher { bottom: 25%; left: 50%; transform: translateX(-50%) !important; }
+        .pos-first { bottom: 45%; right: 28%; }
+        .pos-second { bottom: 55%; left: 50%; transform: translateX(-50%) !important; }
+        .pos-third { bottom: 45%; left: 28%; }
+        .pos-short { bottom: 52%; left: 42%; }
+        .pos-left { bottom: 70%; left: 20%; }
+        .pos-center { bottom: 75%; left: 50%; transform: translateX(-50%) !important; }
+        .pos-right { bottom: 70%; right: 20%; }
+        .sound-toggle { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); border: 3px solid white; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1000; transition: all 0.3s ease; }
+        .sound-toggle:hover { transform: scale(1.1); }
+        .sound-toggle.muted { background: linear-gradient(135deg, #868f96, #596164); }
+        .stats-toggle { position: fixed; bottom: 80px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #f093fb, #f5576c); border: 3px solid white; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1000; transition: all 0.3s ease; }
+        .stats-toggle:hover { transform: scale(1.1); }
+        .timer { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: #ffd700; padding: 10px 20px; border-radius: 25px; font-size: 1.2rem; font-weight: bold; display: none; animation: timerPulse 1s infinite; }
+        .timer.warning { color: #ff6b6b; animation: timerWarning 0.5s infinite; }
+        @keyframes timerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        @keyframes timerWarning { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #667eea, #764ba2); padding: 25px; border-radius: 20px; max-width: 650px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 70px rgba(0,0,0,0.5); border: 3px solid #ffd700; animation: slideIn 0.5s ease; }
+        @keyframes slideIn { from { transform: translate(-50%, -60%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 3px solid rgba(255,255,255,0.3); }
+        .position-title { font-size: 1.2rem; color: white; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .difficulty-badge { padding: 10px 20px; border-radius: 25px; color: white; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+        .easy { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+        .medium { background: linear-gradient(135deg, #f2994a, #f2c94c); }
+        .hard { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .nightmare { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
+        .tiebreaker { background: linear-gradient(135deg, #ff6b6b, #ffd700); animation: pulse 1.5s infinite; }
+        .question-text { font-size: 1.2rem; color: white; margin-bottom: 20px; line-height: 1.4; font-weight: 500; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .answer-options { display: grid; gap: 10px; margin-bottom: 15px; max-height: 40vh; overflow-y: auto; }
+        .answer-option { padding: 15px; border: 3px solid rgba(255,255,255,0.3); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; background: rgba(255,255,255,0.1); color: white; font-weight: 500; backdrop-filter: blur(5px); }
+        .answer-option:hover { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+        .answer-option.selected { border-color: #ffd700; background: rgba(255,215,0,0.3); box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+        .answer-option.correct { border: 3px solid #2ecc71; box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.3); background: rgba(46,204,113,0.3); color: #2ecc71; animation: correctPulse 0.6s ease; }
+        @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .answer-option.incorrect { border: 3px solid #e74c3c; box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3); background: rgba(231,76,60,0.3); color: #e74c3c; animation: shake 0.5s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .explanation-box { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.15); border-radius: 10px; border-left: 4px solid #ffd700; color: white; font-size: 0.95rem; line-height: 1.5; }
+        .achievement-popup { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; padding: 20px; border-radius: 15px; border: 3px solid #ffd700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; animation: slideInRight 0.5s ease; max-width: 300px; }
+        @keyframes slideInRight { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .achievement-popup.hide { animation: slideOutRight 0.5s ease forwards; }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+        .welcome-screen, .game-over { text-align: center; background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0a1929 100%); padding: 50px; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 700px; width: 90%; border: 4px solid #c8102e; color: white; position: relative; overflow: hidden; }
+        .welcome-screen::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(200, 16, 46, 0.03) 10px, rgba(200, 16, 46, 0.03) 20px); animation: slide 20s linear infinite; pointer-events: none; }
+        @keyframes slide { 0% { transform: translate(0, 0); } 100% { transform: translate(50px, 50px); } }
+        .welcome-screen h1 { color: #fff; font-size: 3rem; margin-bottom: 10px; text-shadow: 3px 3px 6px rgba(0,0,0,0.5); position: relative; z-index: 1; }
+        .welcome-screen .subtitle { color: #c8102e; font-size: 1.3rem; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+        .tagline { font-size: 1.1rem; color: #a0a0a0; margin-bottom: 30px; font-style: italic; }
+        .quick-info { background: rgba(200, 16, 46, 0.15); border: 2px solid #c8102e; border-radius: 15px; padding: 20px; margin: 25px 0; position: relative; z-index: 1; }
+        .quick-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .info-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 3px solid #c8102e; }
+        .info-item-title { color: #c8102e; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; }
+        .info-item-desc { font-size: 0.85rem; color: #d0d0d0; }
+        .rules-toggle { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: bold; margin: 20px 0; transition: all 0.3s ease; position: relative; z-index: 1; }
+        .rules-toggle:hover { background: rgba(255,255,255,0.2); border-color: #c8102e; }
+        .rules-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; text-align: left; }
+        .rules-content.open { max-height: 800px; }
+        .timer-option { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 20px 0; position: relative; z-index: 1; }
+        .share-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: 2px solid #ffd700; padding: 12px 25px; font-size: 1rem; border-radius: 25px; cursor: pointer; font-weight: bold; margin-top: 15px; transition: all 0.3s ease; }
+        .share-btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+        /* ── FREE-FORM STYLES ── */
+        .ff-wrap { position: relative; margin-bottom: 15px; }
+        .ff-label { color: rgba(255,255,255,0.85); font-size: .95rem; margin-bottom: 8px; display: block; }
+        .ff-input { width: 100%; padding: 15px 18px; font-size: 1.1rem; border: 3px solid rgba(255,255,255,0.3); border-radius: 12px; background: rgba(255,255,255,0.15); color: white; outline: none; transition: border-color .2s; backdrop-filter: blur(5px); }
+        .ff-input:focus { border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .ff-input::placeholder { color: rgba(255,255,255,0.45); }
+        .ff-input.correct-input  { border-color: #2ecc71; background: rgba(46,204,113,0.3); animation: correctPulse 0.6s ease; }
+        .ff-input.incorrect-input{ border-color: #e74c3c; background: rgba(231,76,60,0.3);  animation: shake 0.5s ease; }
+        .ff-input:disabled { opacity: 0.85; cursor: default; }
+        .ac-list { position: absolute; top: 100%; left: 0; right: 0; background: linear-gradient(135deg, #2c1b6e, #4a1c7a); border: 2px solid #ffd700; border-top: none; border-radius: 0 0 12px 12px; max-height: 230px; overflow-y: auto; z-index: 200; box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+        .ac-item { padding: 13px 18px; cursor: pointer; font-size: 1rem; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background .15s; }
+        .ac-item:last-child { border-bottom: none; }
+        .ac-item:hover, .ac-item.active { background: rgba(255,215,0,0.25); color: #ffd700; }
+        .ff-hint { font-size: .85rem; color: rgba(255,255,255,0.55); margin-top: 6px; }
+        .correct-reveal { margin-top: 10px; padding: 10px 15px; background: rgba(231,76,60,0.25); border-left: 4px solid #e74c3c; border-radius: 8px; color: #ff9999; font-weight: bold; font-size: .95rem; }
+
+        /* ── RELEASE BADGE ── */
+        .release-badge { display: inline-block; background: rgba(200,16,46,0.3); border: 2px solid #c8102e; border-radius: 10px; padding: 8px 20px; margin: 8px 0 4px; color: #fff; font-weight: bold; font-size: .95rem; position: relative; z-index: 1; }
+        .next-release-txt { color: #888; font-size: .85rem; margin-bottom: 10px; position: relative; z-index: 1; }
+
+        @media (max-width: 768px) {
+            .baseball-field { height: 400px; }
+            .position { width: 50px; height: 50px; font-size: 11px; }
+            .scoreboard { font-size: 0.85rem; padding: 15px; }
+            .scoreboard-header { font-size: 1.3rem; }
+            .score-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .score-item span { font-size: 1.4rem; }
+            .bases-row { gap: 8px; }
+            .modal-content { width: 95%; padding: 20px; }
+            .question-text { font-size: 1rem; }
+            .answer-option { padding: 12px; font-size: 0.9rem; }
+            .welcome-screen, .game-over { padding: 30px 20px; }
+            .welcome-screen h1 { font-size: 2rem; }
+            .achievement-popup { max-width: 250px; padding: 15px; font-size: 0.9rem; }
+        }
+        @media (max-width: 480px) {
+            .baseball-field { height: 350px; }
+            .position { width: 42px; height: 42px; font-size: 10px; }
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    </style>
+</head>
+<body>
+<div class="game-container">
+
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen">
+        <h1>⚾ MLB TRIVIA</h1>
+        <div class="subtitle">Daily Challenge</div>
+        <p class="tagline">Test your baseball IQ. One game per release.</p>
+        <div id="releaseBadge" class="release-badge" style="display:none"></div>
+        <div id="nextReleaseTxt" class="next-release-txt"></div>
+        <div class="quick-info">
+            <p style="color: #fff; font-weight: bold; margin-bottom: 15px;">HOW IT WORKS</p>
+            <div class="quick-info-grid">
+                <div class="info-item"><div class="info-item-title">9 Questions</div><div class="info-item-desc">One for each position</div></div>
+                <div class="info-item"><div class="info-item-title">Score Runs</div><div class="info-item-desc">Singles to home runs</div></div>
+                <div class="info-item"><div class="info-item-title">Beat Opponent</div><div class="info-item-desc">Wrong = they score</div></div>
+                <div class="info-item"><div class="info-item-title">Achievements</div><div class="info-item-desc">Unlock rewards</div></div>
+            </div>
+        </div>
+        <button class="rules-toggle" onclick="toggleRules()">📖 Show Full Rules</button>
+        <div id="rulesContent" class="rules-content">
+            <div style="background: rgba(255,255,255,0.05); padding: 25px; border-radius: 15px; margin: 15px 0; border: 2px solid rgba(200,16,46,0.3);">
+                <h3 style="color: #c8102e; margin-bottom: 15px; text-align: left;">Scoring System:</h3>
+                <ul style="list-style: none; padding-left: 0; text-align: left;">
+                    <li style="margin: 10px 0; padding-left: 20px; border-left: 3px solid #2ecc71;">🟢 <strong>Easy:</strong> Single (advance 1 base)</li>
+                    <li style="margin: 10px 0; padding-left: 20px; border-left: 3px solid #f2994a;">🟡 <strong>Medium:</strong> Double (advance 2 bases)</li>
+                    <li style="margin: 10px 0; padding-left: 20px; border-left: 3px solid #e74c3c;">🔴 <strong>Hard:</strong> Triple (advance 3 bases)</li>
+                    <li style="margin: 10px 0; padding-left: 20px; border-left: 3px solid #8e2de2;">🟣 <strong>Nightmare:</strong> Home Run!</li>
+                </ul>
+                <h3 style="color: #c8102e; margin: 25px 0 15px 0; text-align: left;">Game Rules:</h3>
+                <ul style="list-style: none; padding-left: 0; text-align: left;">
+                    <li style="margin: 10px 0;">• Three wrong answers = inning over, bases cleared</li>
+                    <li style="margin: 10px 0;">• Opponent scores on each wrong answer</li>
+                    <li style="margin: 10px 0;">• Tie game triggers sudden-death tiebreaker</li>
+                    <li style="margin: 10px 0;">• Track your stats and unlock achievements</li>
+                    <li style="margin: 10px 0;">• New questions every Tuesday, Friday & Sunday!</li>
+                </ul>
+            </div>
+        </div>
+        <div class="timer-option">
+            <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <input type="checkbox" id="timerMode" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-size: 1rem;">⏱️ Timer Mode (30 seconds per question)</span>
+            </label>
+        </div>
+        <button onclick="startGame()" style="background: linear-gradient(135deg, #c8102e, #8b0a1f); color: white; border: none; padding: 20px 50px; font-size: 1.4rem; border-radius: 35px; cursor: pointer; font-weight: bold; margin-top: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); transition: all 0.3s ease; position: relative; z-index: 1;">PLAY BALL ⚾</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" style="display: none;">
+        <div class="scoreboard">
+            <div class="scoreboard-header">BALLPARK TRIVIA SCOREBOARD</div>
+            <div class="score-row">
+                <div class="score-item">INNING<br><span id="inning">1</span></div>
+                <div class="score-item">YOUR RUNS<br><span id="runs">0</span></div>
+                <div class="score-item">OPPONENT RUNS<br><span id="opponentRuns">0</span></div>
+                <div class="score-item">OUTS<br><span id="outs">0</span></div>
+                <div class="score-item">ANSWERED<br><span id="completed">0</span>/9</div>
+            </div>
+            <div class="bonus-row">
+                <div class="bonus-item">HIGH SCORE: <span id="highScore">0</span></div>
+                <div class="bonus-item">STREAK: <span id="streak">0</span> in a row</div>
+            </div>
+            <div class="bases-display">
+                <div class="bases-title">Runners on Base</div>
+                <div class="bases-row">
+                    <div id="base1" class="base-status">1st: Empty</div>
+                    <div id="base2" class="base-status">2nd: Empty</div>
+                    <div id="base3" class="base-status">3rd: Empty</div>
+                </div>
+            </div>
+        </div>
+        <div class="field-container">
+            <div class="baseball-field" id="baseballField">
+                <div class="position pos-pitcher"  data-position="1" onclick="openQuestion(1, 'Pitcher')"      style="left: 50.5%;"><div>P</div></div>
+                <div class="position pos-catcher"  data-position="2" onclick="openQuestion(2, 'Catcher')"      style="left: 51%;"><div>C</div></div>
+                <div class="position pos-first"    data-position="3" onclick="openQuestion(3, '1st Base')"     style="bottom: 49%; right: 20%;"><div>1B</div></div>
+                <div class="position pos-second"   data-position="4" onclick="openQuestion(4, '2nd Base')"     style="left: 62%; bottom: 55%;"><div>2B</div></div>
+                <div class="position pos-third"    data-position="5" onclick="openQuestion(5, '3rd Base')"     style="left: 20%; bottom: 49%;"><div>3B</div></div>
+                <div class="position pos-short"    data-position="6" onclick="openQuestion(6, 'Shortstop')"    style="left: 35%; bottom: 55%;"><div>SS</div></div>
+                <div class="position pos-left"     data-position="7" onclick="openQuestion(7, 'Left Field')"   style="bottom: 65%; left: 20%;"><div>LF</div></div>
+                <div class="position pos-center"   data-position="8" onclick="openQuestion(8, 'Center Field')" style="bottom: 70%; left: 50%; transform: translateX(-50%) !important;"><div>CF</div></div>
+                <div class="position pos-right"    data-position="9" onclick="openQuestion(9, 'Right Field')"  style="bottom: 65%; right: 20%;"><div>RF</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="game-over" style="display: none;">
+        <h2 style="color: #ffd700; font-size: 2.5rem; margin-bottom: 30px;">Game Complete!</h2>
+        <div id="finalStats"></div>
+        <div id="achievementsEarned" style="margin-top: 20px;"></div>
+        <button class="share-btn" onclick="shareResults()">Share Results</button>
+    </div>
+</div>
+
+<div class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</div>
+<div class="stats-toggle" id="statsToggle" onclick="showStats()">📊</div>
+
+<!-- Question Modal -->
+<div id="questionModal" class="modal">
+    <div class="modal-content">
+        <div class="timer" id="timer">30</div>
+        <div class="question-header">
+            <h3 id="positionTitle" class="position-title"></h3>
+            <span id="difficultyBadge" class="difficulty-badge"></span>
+        </div>
+        <div id="questionText" class="question-text"></div>
+
+        <!-- Multiple choice options -->
+        <div id="answerOptions" class="answer-options"></div>
+
+        <!-- Free-form input (shown for ff questions) -->
+        <div id="ffSection" style="display:none; margin-bottom:15px;">
+            <label class="ff-label">Type the player's full name:</label>
+            <div class="ff-wrap">
+                <input id="ffInput" class="ff-input" type="text"
+                       placeholder="e.g. Derek Jeter" autocomplete="off"
+                       oninput="onFFInput()" onkeydown="onFFKey(event)">
+                <div id="acList" class="ac-list" style="display:none"></div>
+            </div>
+            <div class="ff-hint">💡 Start typing — select a name then click Submit Answer</div>
+        </div>
+
+        <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap;">
+            <button id="submitAnswer" onclick="submitAnswer()" disabled style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold;">Submit Answer</button>
+            <button id="continueBtn" style="display: none; background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold;">Continue</button>
+            <button onclick="closeModal(); checkGameOver();" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold;">Close</button>
+        </div>
+        <div id="resultMessage" style="display: none; margin-top: 20px; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center; font-size: 1.2rem; color: white;"></div>
+    </div>
+</div>
+
+<!-- Stats Modal -->
+<div id="statsModal" class="modal">
+    <div class="modal-content">
+        <h2 style="color: #ffd700; text-align: center; margin-bottom: 20px;">Career Statistics</h2>
+        <div id="statsContent" style="color: white;"></div>
+        <button onclick="closeStatsModal()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold; margin-top: 20px; width: 100%;">Close</button>
+    </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG  — fill these in
+// ─────────────────────────────────────────────
+const SHEET_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQpLfUzGIEGTTgiH_vGJWtRfv5m_Y47Ux8hiToGn3X8b9Ih7uCKU1XxyyjaIaMWIERv8xGvDO69cL90/pub?gid=1566119583&single=true&output=csv';
+const PLAYER_NAMES_URL = 'https://raw.githubusercontent.com/KDog13k/BB/main/mlb_player_names.json';
+
+// Release days: 0 = Sunday, 2 = Tuesday, 5 = Friday
+const RELEASE_DAYS = [0, 2, 5];
+const DAY_NAMES    = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// Maps position names from the sheet → position numbers used on the field
+const POS_NAME_MAP = {
+    'pitcher': 1, 'catcher': 2, '1st base': 3, '2nd base': 4,
+    '3rd base': 5, 'shortstop': 6, 'left field': 7,
+    'center field': 8, 'right field': 9, 'tiebreaker': 'tiebreaker'
+};
+
+// ─────────────────────────────────────────────
+// RELEASE DATE HELPERS
+// ─────────────────────────────────────────────
+let currentReleaseDate = '';
+
+function getCurrentReleaseDate() {
+    const now = new Date();
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        if (RELEASE_DAYS.includes(d.getDay())) {
+            return d.toISOString().split('T')[0];
+        }
+    }
+    return new Date().toISOString().split('T')[0];
+}
+
+function getNextRelease() {
+    const now = new Date();
+    for (let i = 1; i <= 7; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() + i);
+        if (RELEASE_DAYS.includes(d.getDay())) {
+            return DAY_NAMES[d.getDay()];
+        }
+    }
+    return 'soon';
+}
+
+function updateReleaseBadge() {
+    if (!currentReleaseDate) return;
+    const [y,m,d] = currentReleaseDate.split('-');
+    const dt   = new Date(+y, m-1, +d);
+    const label = `📅 ${DAY_NAMES[dt.getDay()]}, ${dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+    const badge = document.getElementById('releaseBadge');
+    badge.textContent = label;
+    badge.style.display = 'inline-block';
+    document.getElementById('nextReleaseTxt').textContent = `Next release: ${getNextRelease()}`;
+}
+
+// ─────────────────────────────────────────────
+// PLAYER NAMES  (autocomplete)
+// ─────────────────────────────────────────────
+let playerNames = [];
+let acIdx = -1;
+
+async function loadPlayerNames() {
+    try {
+        const res  = await fetch(PLAYER_NAMES_URL);
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        playerNames = (data.names || []).sort();
+        console.log(`Loaded ${playerNames.length} player names for autocomplete`);
+    } catch(e) {
+        console.log('Player names unavailable — autocomplete will be limited');
+        playerNames = [
+            "Aaron Judge","Albert Pujols","Alex Rodriguez","Babe Ruth","Barry Bonds",
+            "Cal Ripken","Carlos Beltran","Chipper Jones","Clayton Kershaw","Craig Biggio",
+            "Cy Young","David Ortiz","Derek Jeter","Frank Robinson","Frank Thomas",
+            "Fred McGriff","Freddie Freeman","Gerrit Cole","Giancarlo Stanton","Goose Gossage",
+            "Greg Maddux","Gunnar Henderson","Hank Aaron","Honus Wagner","Ichiro Suzuki",
+            "Ivan Rodriguez","Jackie Robinson","Jeff Bagwell","Jim Thome","Joe DiMaggio",
+            "Johnny Bench","Jose Altuve","Juan Soto","Justin Verlander","Ken Griffey",
+            "Lou Gehrig","Manny Ramirez","Mariano Rivera","Mark McGwire","Max Scherzer",
+            "Mickey Mantle","Miguel Cabrera","Mike Piazza","Mike Schmidt","Mike Trout",
+            "Mookie Betts","Nolan Ryan","Ozzie Smith","Pedro Martinez","Pete Rose",
+            "Randy Johnson","Reggie Jackson","Rich Gossage","Rickey Henderson","Roberto Clemente",
+            "Rod Carew","Roger Clemens","Ronald Acuna Jr.","Ryne Sandberg","Sandy Koufax",
+            "Shohei Ohtani","Stan Musial","Ted Williams","Tim Raines","Todd Helton",
+            "Tom Seaver","Trevor Hoffman","Ty Cobb","Vladimir Guerrero Jr.","Wade Boggs",
+            "Walter Johnson","Willie Mays","Willie McCovey","Yordan Alvarez","Yogi Berra"
+        ].sort();
+    }
+}
+
+// ─────────────────────────────────────────────
+// GOOGLE SHEETS QUESTION LOADING
+// ─────────────────────────────────────────────
+let loadedQuestions = {};   // { positionNumber: questionObject }
+
+async function loadFromSheets() {
+    if (!SHEET_URL || SHEET_URL === 'YOUR_GOOGLE_SHEET_CSV_URL_HERE') return false;
+    try {
+        currentReleaseDate = getCurrentReleaseDate();
+        const res = await fetch(SHEET_URL);
+        if (!res.ok) return false;
+        const text = await res.text();
+        const rows = parseSheetCSV(text);
+        const releaseRows = rows.filter(r => r.release_date === currentReleaseDate);
+        if (!releaseRows.length) return false;
+
+        releaseRows.forEach(row => {
+            const posKey = (row.position || '').toLowerCase().trim();
+            const posNum = POS_NAME_MAP[posKey];
+            if (posNum === 'tiebreaker') {
+                // Store as tiebreaker question
+                const q = buildSheetQuestion(row);
+                if (!questionsDB.tiebreaker) questionsDB.tiebreaker = [];
+                questionsDB.tiebreaker.push(q);
+            } else if (posNum >= 1 && posNum <= 9) {
+                loadedQuestions[posNum] = buildSheetQuestion(row);
+            }
+        });
+        return Object.keys(loadedQuestions).length > 0;
+    } catch(e) {
+        console.log('Google Sheets load failed:', e.message);
+        return false;
+    }
+}
+
+function parseSheetCSV(text) {
+    const lines   = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h =>
+        h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_'));
+    return lines.slice(1).map(line => {
+        const vals = splitCSVLine(line);
+        const obj  = {};
+        headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g,''));
+        return obj;
+    }).filter(r => r.release_date);
+}
+
+function splitCSVLine(line) {
+    const result = []; let cur = ''; let inQ = false;
+    for (const c of line) {
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+        else { cur += c; }
+    }
+    result.push(cur);
+    return result;
+}
+
+function buildSheetQuestion(row) {
+    const type = (row.type || 'mc').toLowerCase();
+    if (type === 'ff') {
+        return {
+            type: 'ff',
+            position:    row.position,
+            difficulty:  (row.difficulty || 'medium').toLowerCase(),
+            question:    row.question,
+            answer:      row.answer,
+            explanation: row.explanation || ''
+        };
+    }
+    // MC — find which option matches the answer text
+    const opts = [row.option_a, row.option_b, row.option_c, row.option_d].filter(Boolean);
+    const ci   = opts.findIndex(o => normAnswer(o) === normAnswer(row.answer));
+    return {
+        type: 'mc',
+        position:    row.position,
+        difficulty:  row.difficulty || 'medium',
+        question:    row.question,
+        options:     opts,
+        correct:     ci >= 0 ? ci : 0,
+        explanation: row.explanation || ''
+    };
+}
+
+// ─────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────
+let gameState = {
+    inning: 1, runs: 0, opponentRuns: 0, outs: 0,
+    completedPositions: 0, answeredPositions: 0,
+    bases: { first: false, second: false, third: false },
+    currentPosition: null, selectedAnswer: null,
+    streak: 0, highScore: 0,
+    timerEnabled: false, timerInterval: null, timeRemaining: 30,
+    soundEnabled: true,
+    currentGameCorrect: 0, currentGameIncorrect: 0,
+    currentQuestion: null, gameOver: false
+};
+
+let careerStats = {
+    gamesPlayed: 0, wins: 0, losses: 0,
+    totalCorrect: 0, totalIncorrect: 0,
+    bestStreak: 0, achievements: []
+};
+
+if (localStorage.getItem('mlbTriviaHighScore'))
+    gameState.highScore = parseInt(localStorage.getItem('mlbTriviaHighScore'));
+if (localStorage.getItem('mlbCareerStats'))
+    careerStats = JSON.parse(localStorage.getItem('mlbCareerStats'));
+
+// ─────────────────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────────────────
+const achievements = {
+    perfectGame: { name: 'Perfect Game',    description: 'Answer all 9 questions correctly', icon: '🏆' },
+    slugger:     { name: 'Slugger',          description: 'Hit 3 home runs in one game',       icon: '💪' },
+    hotStreak:   { name: 'Hot Streak',       description: 'Get 5 correct answers in a row',    icon: '🔥' },
+    comeback:    { name: 'Comeback Kid',     description: 'Win after being down by 3+ runs',   icon: '⭐' },
+    veteran:     { name: 'Veteran Player',   description: 'Play 10 games',                     icon: '🎖️' },
+    scholar:     { name: 'Baseball Scholar', description: 'Answer 100 questions correctly',    icon: '📚' }
+};
+
+// ─────────────────────────────────────────────
+// AUDIO
+// ─────────────────────────────────────────────
+const audioCache = {};
+
+function preloadAudio() {
+    const urls = {
+        playball: 'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Play%20Ball.mp3',
+        hit:      'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Correct.mp3',
+        out:      'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Out.mp3'
+    };
+    for (const [key, url] of Object.entries(urls)) {
+        const a = new Audio();
+        a.preload = 'auto';
+        a.src = url;
+        audioCache[key] = a;
+    }
+    audioCache['homerun'] = audioCache['hit'];
+}
+
+function playSound(type) {
+    if (!gameState.soundEnabled) return;
+    if (audioCache[type]) {
+        const a = audioCache[type].cloneNode();
+        a.volume = 0.5;
+        a.play().catch(() => {});
+        return;
+    }
+    const urls = {
+        playball: 'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Play%20Ball.mp3',
+        hit:      'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Correct.mp3',
+        homerun:  'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Correct.mp3',
+        out:      'https://cdn.jsdelivr.net/gh/KDog13k/BB@main/Out.mp3'
+    };
+    if (!urls[type]) return;
+    const a = new Audio(urls[type]);
+    a.volume = 0.5;
+    a.play().catch(() => {});
+}
+
+// ─────────────────────────────────────────────
+// FALLBACK QUESTION BANK
+// ─────────────────────────────────────────────
+let questionsDB = {
+    easy: [
+        { position: 'Pitcher',    difficulty: 'easy', question: 'From 2008 to 2016, what Colorado Rockie led the team with 985 strikeouts?', options: ['Ubaldo Jimenez','Aaron Cook','Jeff Francis','Jorge De La Rosa'], correct: 3, explanation: 'Jorge De La Rosa was a consistent strikeout pitcher for the Rockies during this period.' },
+        { position: '1st Base',   difficulty: 'easy', question: 'Who has hit the most home runs as a Hawaiian native?', options: ['Mike Lum','Shane Victorino','Kurt Suzuki','Kolten Wong'], correct: 2, explanation: 'Kurt Suzuki, born in Wailuku, Hawaii, has been a productive power-hitting catcher.' },
+        { position: 'Left Field', difficulty: 'easy', question: 'Name the Texas Rangers all-time games played leader with 1823?', options: ['Michael Young','Elvis Andrus','Rafael Palmeiro','Ivan Rodriguez'], correct: 0, explanation: 'Michael Young spent 13 seasons with the Rangers.' }
+    ],
+    medium: [
+        { position: '2nd Base',     difficulty: 'medium', question: 'Who in 2010, at the age of 33, led the league with 68 steals?', options: ['Carl Crawford','Juan Pierre','Scott Podsednik','Coco Crisp'], correct: 1, explanation: 'Juan Pierre proved age is just a number, leading the league in steals at 33.' },
+        { position: '3rd Base',     difficulty: 'medium', question: 'In 2005, this sure-handed glove known for his stint in Minnesota was the Mets Opening Day 1B.', options: ['Jose Offerman','Matt Lawton','Brian Buchanan','Doug Mienkiewicz'], correct: 3, explanation: 'Doug Mientkiewicz was known for his exceptional defense with the Twins before joining the Mets.' },
+        { position: 'Center Field', difficulty: 'medium', question: 'From 2005 to 2008, what player hit exactly 40 home runs each season?', options: ['Albert Pujols','Adam Dunn','Richie Sexson','Paul Konerko'], correct: 1, explanation: 'Adam Dunn showed incredible consistency, hitting exactly 40 home runs in four consecutive seasons.' }
+    ],
+    hard: [
+        { position: 'Catcher',   difficulty: 'hard', question: 'Career Path: Arizona Diamondbacks (2003-07), Houston Astros (2008-09), Detroit Tigers (2010-13), New York Mets (2014)', options: ['Casey Fossum','Brandon Lyon','Jose Valverde','Octavio Dotel'], correct: 2, explanation: 'Jose Valverde was a dominant closer who saved 288 games in his career.' },
+        { position: 'Shortstop', difficulty: 'hard', question: 'In 2001, this player finished 7th in MVP voting despite 49 homers and 125 RBIs.', options: ['Shawn Green','Alex Rodriguez','Jeff Bagwell','Luis Gonzalez'], correct: 0, explanation: 'Shawn Green had one of the best offensive seasons ever in 2001 with the Dodgers.' }
+    ],
+    nightmare: [
+        { position: 'Right Field', difficulty: 'nightmare', question: 'What pitcher in 2008 threw an MLB-record 39 scoreless innings to start his MLB career?', options: ['Joe Kelly','Brad Ziegler','Aaron Loup','Sean Doolittle'], correct: 1, explanation: 'Brad Ziegler set this incredible record as a submarine-style reliever for the Oakland Athletics.' }
+    ],
+    tiebreaker: [
+        { position: 'Tiebreaker', difficulty: 'tiebreaker', question: 'Who is the only active player with over 300 home runs and 1,300 walks?', options: ['Carlos Santana','Andrew McCutchen','Freddie Freeman','Paul Goldschmidt'], correct: 0, explanation: 'Carlos Santana has shown exceptional plate discipline throughout his career.' }
+    ]
+};
+
+// ─────────────────────────────────────────────
+// LOAD QUESTIONS (Sheets first, then GitHub CSV, then hardcoded)
+// ─────────────────────────────────────────────
+async function loadQuestions() {
+    // Step 1 — Google Sheets (primary, release-scheduled)
+    const sheetsOk = await loadFromSheets();
+    if (sheetsOk) {
+        console.log(`Google Sheets loaded for release: ${currentReleaseDate}`);
+        updateReleaseBadge();
+        return;
+    }
+
+    // Step 2 — GitHub CSV fallback
+    try {
+        const response = await fetch('https://raw.githubusercontent.com/KDog13k/mlb/refs/heads/main/MLB%20Trivia%202.csv');
+        if (!response.ok) throw new Error('CSV fetch failed');
+        const csvData = await response.text();
+        const rows = csvData.split('\n').slice(1);
+        const newDB = { easy: [], medium: [], hard: [], nightmare: [], tiebreaker: [] };
+        rows.forEach(row => {
+            if (!row.trim()) return;
+            const columns = [];
+            let current = '', inQuotes = false;
+            for (let i = 0; i < row.length; i++) {
+                const char = row[i];
+                if (char === '"') { inQuotes = !inQuotes; }
+                else if (char === ',' && !inQuotes) { columns.push(current.trim()); current = ''; }
+                else { current += char; }
+            }
+            columns.push(current.trim());
+            if (columns.length >= 8) {
+                const difficulty = columns[1].toLowerCase();
+                if (newDB[difficulty]) {
+                    newDB[difficulty].push({
+                        type: 'mc',
+                        position:    columns[0],
+                        difficulty,
+                        question:    columns[2].replace(/^"|"$/g, ''),
+                        options:     [columns[3],columns[4],columns[5],columns[6]].map(o => o.replace(/^"|"$/g, '')),
+                        correct:     parseInt(columns[7]) - 1,
+                        explanation: columns[8] ? columns[8].replace(/^"|"$/g, '') : 'Great job!'
+                    });
+                }
+            }
+        });
+        if (Object.values(newDB).some(arr => arr.length > 0)) {
+            questionsDB = newDB;
+            console.log('GitHub CSV questions loaded');
+        }
+    } catch(e) {
+        console.log('Using embedded questions.');
+    }
+    updateReleaseBadge();
+}
+
+// ─────────────────────────────────────────────
+// GAME START
+// ─────────────────────────────────────────────
+function startGame() {
+    // One play per release window
+    const lastRelease = localStorage.getItem('mlbTriviaLastRelease');
+    currentReleaseDate = currentReleaseDate || getCurrentReleaseDate();
+    if (lastRelease && lastRelease === currentReleaseDate) {
+        alert(`You've already played this release!\nCome back ${getNextRelease()} for new questions.`);
+        return;
+    }
+    if (Object.values(questionsDB).every(arr => arr.length === 0) && Object.keys(loadedQuestions).length === 0) {
+        alert('Questions are still loading. Please wait a moment and try again.');
+        return;
+    }
+    gameState.timerEnabled = document.getElementById('timerMode').checked;
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'block';
+    resetGameState();
+    updateDisplay();
+    playSound('playball');
+}
+
+function resetGameState() {
+    gameState.inning = 1; gameState.runs = 0; gameState.opponentRuns = 0;
+    gameState.outs = 0; gameState.completedPositions = 0; gameState.answeredPositions = 0;
+    gameState.bases = { first: false, second: false, third: false };
+    gameState.currentPosition = null; gameState.selectedAnswer = null;
+    gameState.streak = 0; gameState.currentGameCorrect = 0;
+    gameState.currentGameIncorrect = 0; gameState.currentQuestion = null; gameState.gameOver = false;
+
+    const positionNames = { '1':'Pitcher','2':'Catcher','3':'1st Base','4':'2nd Base','5':'3rd Base','6':'Shortstop','7':'Left Field','8':'Center Field','9':'Right Field' };
+    document.querySelectorAll('.position').forEach(pos => {
+        pos.classList.remove('completed', 'incorrect');
+        delete pos.dataset.attempted;
+        const p = pos.dataset.position;
+        pos.setAttribute('onclick', `openQuestion(${p}, '${positionNames[p]}')`);
+    });
+}
+
+// ─────────────────────────────────────────────
+// DISPLAY
+// ─────────────────────────────────────────────
+function updateDisplay() {
+    document.getElementById('inning').textContent       = gameState.inning;
+    document.getElementById('runs').textContent         = gameState.runs;
+    document.getElementById('opponentRuns').textContent = gameState.opponentRuns;
+    document.getElementById('outs').textContent         = gameState.outs;
+    document.getElementById('completed').textContent    = gameState.answeredPositions;
+    document.getElementById('streak').textContent       = gameState.streak;
+    document.getElementById('highScore').textContent    = gameState.highScore;
+    ['first','second','third'].forEach((base, i) => {
+        const el = document.getElementById(`base${i+1}`);
+        const labels = ['1st','2nd','3rd'];
+        el.textContent = `${labels[i]}: ${gameState.bases[base] ? 'Runner' : 'Empty'}`;
+        el.className   = `base-status ${gameState.bases[base] ? 'base-occupied' : ''}`;
+    });
+}
+
+// ─────────────────────────────────────────────
+// OPEN QUESTION
+// ─────────────────────────────────────────────
+function openQuestion(position, positionName) {
+    const posEl = document.querySelector(`[data-position="${position}"]`);
+    if (posEl.classList.contains('completed') || posEl.classList.contains('incorrect')) return;
+    if (gameState.gameOver) return;
+    gameState.currentPosition = position;
+
+    // Use Google Sheets question if available for this position
+    if (loadedQuestions[position]) {
+        displayQuestion(loadedQuestions[position], positionName, position);
+        return;
+    }
+
+    // Fallback: pick from questionsDB by position name
+    let questions = [];
+    for (const diff in questionsDB) {
+        if (diff !== 'tiebreaker') {
+            questions = questions.concat(
+                questionsDB[diff].filter(q => q.position.toLowerCase() === positionName.toLowerCase())
+            );
+        }
+    }
+    if (questions.length === 0) {
+        alert(`No questions found for: ${positionName}`);
+        return;
+    }
+    displayQuestion(questions[Math.floor(Math.random() * questions.length)], positionName, position);
+}
+
+// ─────────────────────────────────────────────
+// DISPLAY QUESTION
+// ─────────────────────────────────────────────
+function displayQuestion(question, positionName, position) {
+    document.getElementById('positionTitle').textContent = positionName
+        ? positionName
+        : '⚡ TIEBREAKER QUESTION';
+    document.getElementById('questionText').textContent  = question.question;
+    document.getElementById('difficultyBadge').textContent = question.difficulty.toUpperCase();
+    document.getElementById('difficultyBadge').className   = `difficulty-badge ${question.difficulty}`;
+
+    gameState.selectedAnswer = null;
+    gameState.currentQuestion = question;
+    document.getElementById('submitAnswer').disabled     = true;
+    document.getElementById('submitAnswer').style.display = 'inline-block';
+    document.getElementById('continueBtn').style.display  = 'none';
+    document.getElementById('continueBtn').onclick        = continueGame;
+    document.getElementById('continueBtn').textContent    = 'Continue';
+    document.getElementById('resultMessage').style.display = 'none';
+
+    // Clean up any previous FF reveals
+    document.querySelectorAll('.correct-reveal').forEach(el => el.remove());
+
+    const qType = (question.type || 'mc');
+    if (qType === 'ff') {
+        document.getElementById('answerOptions').style.display = 'none';
+        document.getElementById('ffSection').style.display     = 'block';
+        renderFF();
+    } else {
+        document.getElementById('answerOptions').style.display = 'grid';
+        document.getElementById('ffSection').style.display     = 'none';
+        document.getElementById('answerOptions').innerHTML = '';
+        question.options.forEach((option, index) => {
+            const div = document.createElement('div');
+            div.className = 'answer-option';
+            div.textContent = option;
+            div.onclick = () => selectAnswer(index, div);
+            document.getElementById('answerOptions').appendChild(div);
+        });
+    }
+
+    document.getElementById('questionModal').style.display = 'block';
+    if (gameState.timerEnabled) startTimer();
+}
+
+// ─────────────────────────────────────────────
+// FREE-FORM HELPERS
+// ─────────────────────────────────────────────
+function renderFF() {
+    const inp = document.getElementById('ffInput');
+    inp.value = ''; inp.className = 'ff-input'; inp.disabled = false;
+    document.getElementById('acList').style.display = 'none';
+    document.getElementById('submitAnswer').disabled = true;
+    acIdx = -1;
+}
+
+function onFFInput() {
+    const val  = document.getElementById('ffInput').value.trim();
+    const list = document.getElementById('acList');
+    document.getElementById('submitAnswer').disabled = val.length < 2;
+    acIdx = -1;
+    if (val.length < 2) { list.style.display = 'none'; return; }
+
+    const q = val.toLowerCase();
+    const matches = playerNames.filter(n => n.toLowerCase().includes(q)).slice(0, 10);
+    if (!matches.length) { list.style.display = 'none'; return; }
+
+    list.innerHTML = '';
+    matches.forEach(m => {
+        const d = document.createElement('div');
+        d.className   = 'ac-item';
+        d.textContent = m;
+        // mousedown fires before blur — prevents input losing focus before pick
+        d.onmousedown = e => { e.preventDefault(); pickAC(m); };
+        list.appendChild(d);
+    });
+    list.style.display = 'block';
+}
+
+function onFFKey(e) {
+    const list  = document.getElementById('acList');
+    const items = list.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acIdx = Math.min(acIdx + 1, items.length - 1);
+        items.forEach((it, i) => it.classList.toggle('active', i === acIdx));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acIdx = Math.max(acIdx - 1, -1);
+        items.forEach((it, i) => it.classList.toggle('active', i === acIdx));
+    } else if (e.key === 'Enter' && acIdx >= 0) {
+        e.preventDefault();
+        pickAC(items[acIdx].textContent);
+    } else if (e.key === 'Escape') {
+        list.style.display = 'none';
+    }
+}
+
+function pickAC(name) {
+    document.getElementById('ffInput').value = name;
+    document.getElementById('acList').style.display = 'none';
+    document.getElementById('submitAnswer').disabled = false;
+    // Focus back to input so user sees their selection
+    document.getElementById('ffInput').focus();
+}
+
+function normAnswer(s) {
+    return (s || '').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\./g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function checkFFAnswer() {
+    const given     = document.getElementById('ffInput').value.trim();
+    const answers   = (gameState.currentQuestion.answer || '').split('|');
+    const isCorrect = answers.some(a => normAnswer(given) === normAnswer(a));
+    const inp       = document.getElementById('ffInput');
+    inp.className = 'ff-input ' + (isCorrect ? 'correct-input' : 'incorrect-input');
+    inp.disabled  = true;
+    document.getElementById('acList').style.display = 'none';
+    if (!isCorrect) {
+        const rev = document.createElement('div');
+        rev.className   = 'correct-reveal';
+        // Show all acceptable answers if there are multiple
+        const display = answers.length > 1
+            ? `✓ Accepted answers: ${answers.join(' or ')}`
+            : `✓ Correct answer: ${answers[0]}`;
+        rev.textContent = display;
+        document.getElementById('ffSection').appendChild(rev);
+    }
+    return isCorrect;
+}
+
+// ─────────────────────────────────────────────
+// TIEBREAKER
+// ─────────────────────────────────────────────
+function showTiebreaker() {
+    if (questionsDB.tiebreaker.length === 0) { endGame(); return; }
+    const question = questionsDB.tiebreaker[Math.floor(Math.random() * questionsDB.tiebreaker.length)];
+    gameState.currentPosition = 'tiebreaker';
+    displayQuestion(question, null, null);
+}
+
+// ─────────────────────────────────────────────
+// TIMER
+// ─────────────────────────────────────────────
+function startTimer() {
+    gameState.timeRemaining = 30;
+    const timerEl = document.getElementById('timer');
+    timerEl.style.display = 'block';
+    timerEl.classList.remove('warning');
+    timerEl.textContent = 30;
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = setInterval(() => {
+        gameState.timeRemaining--;
+        timerEl.textContent = gameState.timeRemaining;
+        if (gameState.timeRemaining <= 10) timerEl.classList.add('warning');
+        if (gameState.timeRemaining <= 0) {
+            clearInterval(gameState.timerInterval);
+            gameState.selectedAnswer = -1;
+            submitAnswer();
+        }
+    }, 1000);
+}
+
+// ─────────────────────────────────────────────
+// SELECT ANSWER (MC)
+// ─────────────────────────────────────────────
+function selectAnswer(index, element) {
+    document.querySelectorAll('.answer-option').forEach(o => o.classList.remove('selected'));
+    element.classList.add('selected');
+    gameState.selectedAnswer = index;
+    document.getElementById('submitAnswer').disabled = false;
+}
+
+// ─────────────────────────────────────────────
+// SUBMIT ANSWER
+// ─────────────────────────────────────────────
+function submitAnswer() {
+    clearInterval(gameState.timerInterval);
+    document.getElementById('timer').style.display = 'none';
+
+    const qType = (gameState.currentQuestion.type || 'mc');
+    let isCorrect;
+
+    if (qType === 'ff') {
+        isCorrect = checkFFAnswer();
+    } else {
+        isCorrect = gameState.selectedAnswer === gameState.currentQuestion.correct;
+        document.querySelectorAll('.answer-option').forEach((opt, i) => {
+            if (i === gameState.currentQuestion.correct) opt.classList.add('correct');
+            else if (i === gameState.selectedAnswer && !isCorrect) opt.classList.add('incorrect');
+            opt.onclick = null;
+        });
+    }
+
+    // Tiebreaker path
+    if (gameState.currentPosition === 'tiebreaker') {
+        handleTiebreakerResult(isCorrect);
+        return;
+    }
+
+    // Normal path
+    const posEl = document.querySelector(`[data-position="${gameState.currentPosition}"]`);
+    posEl.setAttribute('onclick', '');
+
+    let resultText = '';
+
+    if (isCorrect) {
+        gameState.completedPositions++;
+        gameState.answeredPositions++;
+        gameState.currentGameCorrect++;
+        careerStats.totalCorrect++;
+        posEl.classList.add('completed');
+
+        switch (gameState.currentQuestion.difficulty) {
+            case 'easy':
+                playSound('hit');
+                resultText = 'SINGLE! Runner on first.';
+                advanceRunners(1); gameState.bases.first = true; break;
+            case 'medium':
+                playSound('hit');
+                resultText = 'DOUBLE! Runner on second.';
+                advanceRunners(2); gameState.bases.second = true; break;
+            case 'hard':
+                playSound('hit');
+                resultText = 'TRIPLE! Runner on third.';
+                advanceRunners(3); gameState.bases.third = true; break;
+            case 'nightmare':
+                playSound('homerun');
+                resultText = 'HOME RUN! All runners score!';
+                gameState.runs += countRunnersOnBase() + 1;
+                clearBases(); break;
+        }
+        gameState.streak++;
+        if (gameState.streak > careerStats.bestStreak) careerStats.bestStreak = gameState.streak;
+        if (gameState.streak >= 5 && !careerStats.achievements.includes('hotStreak')) unlockAchievement('hotStreak');
+    } else {
+        gameState.answeredPositions++;
+        gameState.currentGameIncorrect++;
+        careerStats.totalIncorrect++;
+        playSound('out');
+        posEl.classList.add('incorrect');
+        gameState.outs++;
+        gameState.opponentRuns++;
+        gameState.streak = 0;
+        resultText = gameState.timeRemaining <= 0 ? 'OUT! Time ran out!' : 'OUT! Wrong answer.';
+        if (gameState.outs >= 3) {
+            resultText += ' Three outs! New inning.';
+            gameState.outs = 0; gameState.inning++; clearBases();
+        }
+    }
+
+    if (gameState.currentQuestion.explanation) {
+        resultText += `\n\n📖 ${gameState.currentQuestion.explanation}`;
+    }
+
+    const msgEl = document.getElementById('resultMessage');
+    msgEl.style.whiteSpace = 'pre-wrap';
+    msgEl.textContent = resultText;
+    msgEl.style.backgroundColor = isCorrect ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)';
+    msgEl.style.display = 'block';
+    document.getElementById('submitAnswer').style.display = 'none';
+    document.getElementById('continueBtn').style.display  = 'inline-block';
+
+    updateDisplay();
+    saveCareerStats();
+}
+
+// ─────────────────────────────────────────────
+// TIEBREAKER RESULT
+// ─────────────────────────────────────────────
+function handleTiebreakerResult(isCorrect) {
+    if (isCorrect) {
+        gameState.runs++;
+        gameState.currentGameCorrect++;
+        careerStats.totalCorrect++;
+        document.getElementById('resultMessage').textContent = 'TIEBREAKER WIN! You score the winning run!';
+        document.getElementById('resultMessage').style.backgroundColor = 'rgba(46,204,113,0.3)';
+    } else {
+        gameState.opponentRuns++;
+        gameState.currentGameIncorrect++;
+        careerStats.totalIncorrect++;
+        document.getElementById('resultMessage').textContent = 'Opponent scores! You lose the tiebreaker.';
+        document.getElementById('resultMessage').style.backgroundColor = 'rgba(231,76,60,0.3)';
+    }
+    document.getElementById('resultMessage').style.display = 'block';
+    document.getElementById('submitAnswer').style.display  = 'none';
+    const contBtn = document.getElementById('continueBtn');
+    contBtn.textContent   = 'View Final Score';
+    contBtn.style.display = 'inline-block';
+    contBtn.onclick = () => { closeModal(); endGame(); };
+    updateDisplay();
+    saveCareerStats();
+}
+
+function continueGame() { closeModal(); checkGameOver(); }
+
+function checkGameOver() {
+    if (gameState.gameOver) return;
+    if (gameState.answeredPositions >= 9) {
+        setTimeout(() => {
+            gameState.runs === gameState.opponentRuns ? showTiebreaker() : endGame();
+        }, 400);
+    }
+}
+
+// ─────────────────────────────────────────────
+// BASE RUNNING
+// ─────────────────────────────────────────────
+function advanceRunners(bases) {
+    let scored = 0;
+    if (gameState.bases.third  && bases >= 1) { scored++; gameState.bases.third  = false; }
+    if (gameState.bases.second && bases >= 2) { scored++; gameState.bases.second = false; }
+    if (gameState.bases.first  && bases >= 3) { scored++; gameState.bases.first  = false; }
+    if (bases < 3) {
+        if (gameState.bases.second && bases >= 1) { gameState.bases.third  = true; gameState.bases.second = false; }
+        if (gameState.bases.first  && bases >= 2) { gameState.bases.third  = true; gameState.bases.first  = false; }
+        else if (gameState.bases.first && bases >= 1) { gameState.bases.second = true; gameState.bases.first = false; }
+    }
+    gameState.runs += scored;
+}
+function countRunnersOnBase() {
+    return [gameState.bases.first, gameState.bases.second, gameState.bases.third].filter(Boolean).length;
+}
+function clearBases() { gameState.bases = { first: false, second: false, third: false }; }
+
+// ─────────────────────────────────────────────
+// CLOSE MODAL
+// ─────────────────────────────────────────────
+function closeModal() {
+    document.getElementById('questionModal').style.display = 'none';
+    clearInterval(gameState.timerInterval);
+    document.getElementById('timer').style.display = 'none';
+    document.querySelectorAll('.correct-reveal').forEach(el => el.remove());
+}
+
+// ─────────────────────────────────────────────
+// END GAME
+// ─────────────────────────────────────────────
+function endGame() {
+    if (gameState.gameOver) return;
+    gameState.gameOver = true;
+
+    currentReleaseDate = currentReleaseDate || getCurrentReleaseDate();
+    localStorage.setItem('mlbTriviaLastRelease', currentReleaseDate);
+    localStorage.setItem('mlbTriviaLastPlayed',  new Date().toDateString());
+
+    careerStats.gamesPlayed++;
+    const won = gameState.runs > gameState.opponentRuns;
+    if (won) careerStats.wins++; else careerStats.losses++;
+
+    if (gameState.currentGameCorrect === 9 && !careerStats.achievements.includes('perfectGame')) unlockAchievement('perfectGame');
+    if (careerStats.gamesPlayed >= 10   && !careerStats.achievements.includes('veteran'))     unlockAchievement('veteran');
+    if (careerStats.totalCorrect >= 100 && !careerStats.achievements.includes('scholar'))     unlockAchievement('scholar');
+
+    if (gameState.runs > gameState.highScore) {
+        gameState.highScore = gameState.runs;
+        localStorage.setItem('mlbTriviaHighScore', gameState.highScore);
+    }
+    saveCareerStats();
+
+    document.getElementById('gameScreen').style.display    = 'none';
+    document.getElementById('gameOverScreen').style.display = 'block';
+
+    const netScore = gameState.runs - gameState.opponentRuns;
+    let performance = '';
+    if      (netScore >= 8)  performance = 'HALL OF FAME! You dominated!';
+    else if (netScore >= 6)  performance = 'MVP Performance! Outstanding!';
+    else if (netScore >= 4)  performance = 'All-Star Game! Great job!';
+    else if (netScore >= 2)  performance = 'Solid Performance! Good baseball IQ!';
+    else if (netScore >= 0)  performance = won ? 'You Win! Great job!' : "Tie game — you survived!";
+    else                     performance = 'You Lose — Better luck next time!';
+
+    const battingAvg = Math.round((gameState.currentGameCorrect / 9) * 1000).toString().padStart(3, '0');
+    const isNewHS    = gameState.runs === gameState.highScore && gameState.runs > 0;
+
+    document.getElementById('finalStats').innerHTML = `
+        ${isNewHS ? '<h3 style="color:#ffd700;font-size:2rem;margin-bottom:20px;">🏆 NEW HIGH SCORE!</h3>' : ''}
+        <div style="background:rgba(255,255,255,0.1);padding:25px;border-radius:15px;">
+            <p style="font-size:1.3rem;margin:15px 0;"><strong>Your Runs:</strong> ${gameState.runs}</p>
+            <p style="font-size:1.3rem;margin:15px 0;"><strong>Opponent Runs:</strong> ${gameState.opponentRuns}</p>
+            <p style="font-size:1.3rem;margin:15px 0;color:${netScore>=0?'#2ecc71':'#e74c3c'}"><strong>Final Score:</strong> ${gameState.runs}-${gameState.opponentRuns}</p>
+            <p style="font-size:1.2rem;margin:15px 0;"><strong>Batting Average:</strong> .${battingAvg}</p>
+            <p style="font-size:1.2rem;margin:15px 0;"><strong>Best Streak:</strong> ${gameState.streak}</p>
+            <p style="font-size:1.1rem;margin:15px 0;"><strong>Innings Played:</strong> ${gameState.inning}</p>
+            <p style="font-size:1.3rem;margin-top:25px;color:#ffd700;"><strong>${performance}</strong></p>
+            <p style="font-size:1.1rem;margin-top:25px;color:#ff6b6b;"><strong>Next release: ${getNextRelease()}!</strong></p>
+        </div>`;
+}
+
+// ─────────────────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────────────────
+function unlockAchievement(id) {
+    if (careerStats.achievements.includes(id)) return;
+    careerStats.achievements.push(id);
+    showAchievementPopup(achievements[id]);
+    saveCareerStats();
+}
+function showAchievementPopup(achievement) {
+    const popup = document.createElement('div');
+    popup.className = 'achievement-popup';
+    popup.innerHTML = `
+        <div style="font-size:3rem;text-align:center;margin-bottom:10px;">${achievement.icon}</div>
+        <div style="font-size:1.2rem;font-weight:bold;text-align:center;margin-bottom:5px;">Achievement Unlocked!</div>
+        <div style="font-size:1rem;font-weight:bold;text-align:center;">${achievement.name}</div>
+        <div style="font-size:0.9rem;text-align:center;margin-top:5px;">${achievement.description}</div>`;
+    document.body.appendChild(popup);
+    playSound('homerun');
+    setTimeout(() => { popup.classList.add('hide'); setTimeout(() => popup.remove(), 500); }, 4000);
+}
+function saveCareerStats() { localStorage.setItem('mlbCareerStats', JSON.stringify(careerStats)); }
+
+// ─────────────────────────────────────────────
+// STATS MODAL
+// ─────────────────────────────────────────────
+function showStats() {
+    const total  = careerStats.totalCorrect + careerStats.totalIncorrect;
+    const avg    = total > 0 ? Math.round((careerStats.totalCorrect / total) * 1000).toString().padStart(3,'0') : '000';
+    const winPct = careerStats.gamesPlayed > 0 ? ((careerStats.wins / careerStats.gamesPlayed) * 100).toFixed(1) : '0.0';
+    let achHTML  = careerStats.achievements.length === 0
+        ? '<p style="opacity:0.7;">No achievements yet. Keep playing!</p>'
+        : careerStats.achievements.map(id => {
+            const a = achievements[id];
+            return `<div style="background:rgba(255,255,255,0.1);padding:15px;border-radius:10px;margin-bottom:10px;">
+                <div style="font-size:2rem;">${a.icon}</div>
+                <div style="font-weight:bold;margin-top:5px;">${a.name}</div>
+                <div style="font-size:0.9rem;opacity:0.8;">${a.description}</div></div>`;
+          }).join('');
+    document.getElementById('statsContent').innerHTML = `
+        <div style="background:rgba(255,255,255,0.1);padding:20px;border-radius:10px;margin-bottom:15px;">
+            <h3 style="color:#ffd700;margin-bottom:15px;">Overall Statistics</h3>
+            <p style="margin:10px 0;"><strong>Games Played:</strong> ${careerStats.gamesPlayed}</p>
+            <p style="margin:10px 0;"><strong>Record:</strong> ${careerStats.wins}-${careerStats.losses} (${winPct}%)</p>
+            <p style="margin:10px 0;"><strong>Career Batting Average:</strong> .${avg}</p>
+            <p style="margin:10px 0;"><strong>Total Correct:</strong> ${careerStats.totalCorrect}</p>
+            <p style="margin:10px 0;"><strong>Total Incorrect:</strong> ${careerStats.totalIncorrect}</p>
+            <p style="margin:10px 0;"><strong>Best Streak:</strong> ${careerStats.bestStreak}</p>
+            <p style="margin:10px 0;"><strong>High Score:</strong> ${gameState.highScore} runs</p>
+        </div>
+        <div style="margin-top:20px;"><h3 style="color:#ffd700;margin-bottom:15px;">Achievements</h3>${achHTML}</div>`;
+    document.getElementById('statsModal').style.display = 'block';
+}
+function closeStatsModal() { document.getElementById('statsModal').style.display = 'none'; }
+
+// ─────────────────────────────────────────────
+// SHARE
+// ─────────────────────────────────────────────
+function shareResults() {
+    const avg  = Math.round((gameState.currentGameCorrect / 9) * 1000).toString().padStart(3,'0');
+    const text = `MLB Trivia Baseball ⚾\n\nFinal Score: ${gameState.runs}-${gameState.opponentRuns}\nBatting Avg: .${avg}\nStreak: ${gameState.streak}\n\nPlay at: [Your URL Here]`;
+    if (navigator.share) {
+        navigator.share({ title: 'MLB Trivia Baseball', text }).catch(() => copyToClipboard(text));
+    } else {
+        copyToClipboard(text);
+    }
+}
+function copyToClipboard(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Results copied to clipboard!');
+}
+
+// ─────────────────────────────────────────────
+// MISC
+// ─────────────────────────────────────────────
+function toggleSound() {
+    gameState.soundEnabled = !gameState.soundEnabled;
+    const el = document.getElementById('soundToggle');
+    el.textContent = gameState.soundEnabled ? '🔊' : '🔇';
+    el.classList.toggle('muted', !gameState.soundEnabled);
+}
+function toggleRules() {
+    const rc  = document.getElementById('rulesContent');
+    const btn = document.querySelector('.rules-toggle');
+    rc.classList.toggle('open');
+    btn.textContent = rc.classList.contains('open') ? '📖 Hide Rules' : '📖 Show Full Rules';
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    preloadAudio();
+    loadPlayerNames();
+    loadQuestions();
+});
+</script>
+</body>
+</html>
